@@ -11,8 +11,7 @@ using namespace chrono;
 
 // 1. Пузырьковая сортировка
 void bubbleSort(vector<int>& arr,
-    long long& comparisons,
-    long long& assignments) {
+    long long& comparisons) {
     size_t n = arr.size();
 
     for (size_t i = 0; i < n - 1; ++i) {
@@ -26,7 +25,6 @@ void bubbleSort(vector<int>& arr,
                 arr[j] = arr[j + 1];
                 arr[j + 1] = temp;
 
-                assignments += 3;
                 changed = true;
             }
         }
@@ -38,47 +36,46 @@ void bubbleSort(vector<int>& arr,
     }
 }
 
-// 2. Сортировка вставками
+// 2. Сортировка вставками с бинарным поиском
 void insertionSort(vector<int>& arr,
-    long long& comparisons,
-    long long& assignments) {
-    size_t n = arr.size();
+    long long& comparisons) {
+    vector<int> sorted;
+    sorted.reserve(arr.size());
 
-    for (size_t i = 1; i < n; ++i) {
+    for (size_t i = 0; i < arr.size(); ++i) {
         int key = arr[i];
-        assignments++;
 
-        size_t j = i;
+        size_t left = 0;
+        size_t right = sorted.size();
 
-        while (j > 0) {
+        // Бинарным поиском определяем место вставки
+        while (left < right) {
+            size_t mid = left + (right - left) / 2;
             comparisons++;
 
-            if (arr[j - 1] <= key) {
-                break;
+            if (sorted[mid] < key) {
+                left = mid + 1;
             }
-
-            arr[j] = arr[j - 1];
-            assignments++;
-            --j;
+            else {
+                right = mid;
+            }
         }
 
-        arr[j] = key;
-        assignments++;
+        // Вставка элемента на найденное место
+        sorted.insert(sorted.begin() + left, key);
     }
+
+    arr = sorted;
 }
 
 // 3. Рекурсивная сортировка Хоара
-// Используется дополнительная память.
-// Обменов (swap) нет.
 void hoareSortExtraMemory(vector<int>& arr,
-    long long& comparisons,
-    long long& assignments) {
+    long long& comparisons) {
     if (arr.size() <= 1) {
         return;
     }
 
     int pivot = arr[arr.size() / 2];
-    assignments++;
 
     vector<int> left;
     vector<int> equal;
@@ -90,42 +87,36 @@ void hoareSortExtraMemory(vector<int>& arr,
 
         if (arr[i] < pivot) {
             left.push_back(arr[i]);
-            assignments++;
         }
         else {
             comparisons++;
 
             if (arr[i] > pivot) {
                 right.push_back(arr[i]);
-                assignments++;
             }
             else {
                 equal.push_back(arr[i]);
-                assignments++;
             }
         }
     }
 
     // Рекурсивная сортировка частей
-    hoareSortExtraMemory(left, comparisons, assignments);
-    hoareSortExtraMemory(right, comparisons, assignments);
+    hoareSortExtraMemory(left, comparisons);
+    hoareSortExtraMemory(right, comparisons);
 
     // Сборка отсортированного массива без перестановок
     size_t index = 0;
 
     for (size_t i = 0; i < left.size(); ++i) {
         arr[index++] = left[i];
-        assignments++;
     }
 
     for (size_t i = 0; i < equal.size(); ++i) {
         arr[index++] = equal[i];
-        assignments++;
     }
 
     for (size_t i = 0; i < right.size(); ++i) {
         arr[index++] = right[i];
-        assignments++;
     }
 }
 
@@ -169,11 +160,10 @@ int main() {
     // Сортировка пузырьком
     vector<int> arr1 = originalArray;
     long long comp1 = 0;
-    long long assign1 = 0;
 
     auto start1 = steady_clock::now();
 
-    bubbleSort(arr1, comp1, assign1);
+    bubbleSort(arr1, comp1);
 
     auto end1 = steady_clock::now();
 
@@ -183,11 +173,10 @@ int main() {
     // Сортировка вставками
     vector<int> arr2 = originalArray;
     long long comp2 = 0;
-    long long assign2 = 0;
 
     auto start2 = steady_clock::now();
 
-    insertionSort(arr2, comp2, assign2);
+    insertionSort(arr2, comp2);
 
     auto end2 = steady_clock::now();
 
@@ -197,11 +186,10 @@ int main() {
     // Сортировка Хоара
     vector<int> arr3 = originalArray;
     long long comp3 = 0;
-    long long assign3 = 0;
 
     auto start3 = steady_clock::now();
 
-    hoareSortExtraMemory(arr3, comp3, assign3);
+    hoareSortExtraMemory(arr3, comp3);
 
     auto end3 = steady_clock::now();
 
@@ -213,21 +201,18 @@ int main() {
 
     cout << "\n1. Пузырьковая сортировка\n";
     cout << "Сравнений: " << comp1 << endl;
-    cout << "Присваиваний: " << assign1 << endl;
     cout << "Время: " << time1 << " мс\n";
     cout << "Массив отсортирован: "
         << (checkSorted(arr1) ? "да" : "нет") << endl;
 
     cout << "\n2. Сортировка вставками\n";
     cout << "Сравнений: " << comp2 << endl;
-    cout << "Присваиваний: " << assign2 << endl;
     cout << "Время: " << time2 << " мс\n";
     cout << "Массив отсортирован: "
         << (checkSorted(arr2) ? "да" : "нет") << endl;
 
     cout << "\n3. Сортировка Хоара\n";
     cout << "Сравнений: " << comp3 << endl;
-    cout << "Присваиваний: " << assign3 << endl;
     cout << "Время: " << time3 << " мс\n";
     cout << "Массив отсортирован: "
         << (checkSorted(arr3) ? "да" : "нет") << endl;
@@ -243,6 +228,16 @@ int main() {
     }
     else {
         cout << "По времени быстрее сортировка Хоара.\n";
+    }
+
+    if (comp1 <= comp2 && comp1 <= comp3) {
+        cout << "Меньше сравнений у пузырьковой сортировки.\n";
+    }
+    else if (comp2 <= comp1 && comp2 <= comp3) {
+        cout << "Меньше сравнений у сортировки вставками.\n";
+    }
+    else {
+        cout << "Меньше сравнений у сортировки Хоара.\n";
     }
 
     if (arr1 == arr2 && arr2 == arr3) {
